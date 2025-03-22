@@ -26,8 +26,13 @@ func main() {
 		User.POST("/create", Controllers.CreateUser)
 	}
 
+	Location := r.Group("/location")
+	{ 
+		Location.POST("/save", Controllers.SaveLocation)
+	}
 
-	if err := r.Run(":8081"); err != nil {
+
+	if err := r.Run(":8090"); err != nil {
 		log.Println("Failed to start server")
 	}
 }

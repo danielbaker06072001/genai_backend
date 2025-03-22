@@ -18,7 +18,7 @@ func GetUsers(c *gin.Context) {
 
 
 func CreateUser(c *gin.Context) { 
-	var userVM DTO.UserInputDTO
+	var userVM *DTO.UserInputDTO
 	var response ViewModels.CommonViewModel
 
 	if err := c.ShouldBind(&userVM); err != nil {
@@ -26,9 +26,9 @@ func CreateUser(c *gin.Context) {
 		return
 	}
 
-
-	userReponseDTO := Logic.CreateUserLogic(userVM)
-	if userReponseDTO.UserId == "" {
+	var userSponse *DTO.UserOutputDTO
+	userSponse , err := Logic.CreateUserLogic(*userVM)
+	if err != nil {
 		response.Result = "Error"
 		response.Message = "Create User"
 		response.Data = nil
@@ -38,7 +38,7 @@ func CreateUser(c *gin.Context) {
 
 	response.Result = "OK"
 	response.Message = "Create User"
-	response.Data = userVM
+	response.Data = userSponse
 
 	c.JSON(http.StatusOK, response)
 

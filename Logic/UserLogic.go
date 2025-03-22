@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"genai2025/DTO"
 	Initializers "genai2025/Initializer"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func CreateUserLogic(param DTO.UserInputDTO) DTO.UserOutputDTO {
+func CreateUserLogic(param DTO.UserInputDTO) (*DTO.UserOutputDTO, error) {
 	var result DTO.UserOutputDTO
 
 	collection := Initializers.MongoDatabase.Collection("user")
@@ -19,11 +21,14 @@ func CreateUserLogic(param DTO.UserInputDTO) DTO.UserOutputDTO {
 
 	insertResult, err := collection.InsertOne(context.Background(), user)
 	if err != nil {
-		return result
+		return nil, err
 	}
 
 	fmt.Printf("Insert result: %+v\n", insertResult)
+	insertedID := insertResult.InsertedID
+	result.UserId = insertedID.(primitive.ObjectID).Hex()
+	result.Username = param.Username
+	result.Email = param.Email
 
-
-	return result
+	return &result, nil
 }
