@@ -34,6 +34,10 @@ func main() {
 		Location.POST("/get-closest", Controllers.GetClosestLocation)
 	}
 
+	GenAI := r.Group("/genai")
+	{
+		GenAI.POST("/analze-close-profile", Controllers.AnalyzeProfile)
+	}
 
 	if err := r.Run(":8090"); err != nil {
 		log.Println("Failed to start server")

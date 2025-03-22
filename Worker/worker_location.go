@@ -3,6 +3,8 @@ package Worker
 import (
 	"fmt"
 	"genai2025/DTO"
+	"genai2025/Utils"
+	"log"
 	"math"
 )
 
@@ -47,6 +49,37 @@ func StartWorker(jobs <-chan ProximityJob) {
 
 		fmt.Printf("Nearby locations for user %s: %+v\n", job.Username, nearby)
 		job.Callback(&DTO.PromixityJob{UserData: nearby}, nil)
+
+		// ? After finished retrieving close devices, use AI to analyze the data
+		// ? Then, return the result to the callback function 
+		// ? Input: @username
+		go func() { 
+			fmt.Printf("AI analysis for user %s\n", job.Username)
+			// ! Perform AI Analysis here
+			testUser := DTO.UserPromptDTO { 
+				Username: "user1",
+				Skills: []string{"Java", "SQL", "React"},
+				Interest: []string{"AI", "Backend systems", "ML pipelines", "REST APIs"},
+			}
+			testProfiles := []DTO.UserPromptDTO {
+				{
+					Username: "user2",
+					Skills: []string{"Python", "GenerateiveAI"},
+					Interest: []string{"AI", "Backend systems", "ML pipelines", "REST APIs"},
+				},
+				{
+					Username: "user3",
+					Skills: []string{"Java", "SQL", "React", "Next.js", "Supabase", "REST APIs"},
+					Interest: []string{"AI", "Backend systems", "ML pipelines", "REST APIs"},
+				},
+			}
+			result := <- Utils.RankCloseDevicesAsync(testUser, testProfiles)
+			if result.Error != nil {
+				log.Println("Error:", result.Error)
+			} else {
+				log.Println("Cohere Response:", result.Response.Text)
+			}	
+		}()
 	}
 }
 
