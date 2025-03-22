@@ -6,6 +6,7 @@ import (
 	"genai2025/DTO"
 	Initializers "genai2025/Initializer"
 	"genai2025/Worker"
+	"strconv"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -74,16 +75,32 @@ func GetClosestLocationLogic(username string) error {
 	if err != nil {
 		return fmt.Errorf("failed to get locations: %v", err)
 	}
+	
 	defer cursor.Close(context.Background())
 
 	var locations []DTO.Location
+
 	for cursor.Next(context.Background()) {
-		var loc DTO.Location
-		if err := cursor.Decode(&loc); err != nil {
+		var rawLoc DTO.LocationRaw
+		if err := cursor.Decode(&rawLoc); err != nil {
+			fmt.Printf("failed to decode raw location: %v\n", err)
 			continue
 		}
-		locations = append(locations, loc)
+
+		lat, err1 := strconv.ParseFloat(rawLoc.Latitude, 64)
+		lon, err2 := strconv.ParseFloat(rawLoc.Longitude, 64)
+		if err1 != nil || err2 != nil {
+			fmt.Printf("failed to convert lat/lon: %v, %v\n", err1, err2)
+			continue
+		}
+
+		locations = append(locations, DTO.Location{
+			Username:  rawLoc.Username,
+			Latitude:  lat,
+			Longitude: lon,
+		})
 	}
+
 
 	// ✅ Enqueue the job with username and callback
 	job := Worker.ProximityJob{

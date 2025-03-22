@@ -21,6 +21,7 @@ func InitJobQueue(buffer int) {
 
 func StartWorker(jobs <-chan ProximityJob) {
 	for job := range jobs {
+		fmt.Println(job)
 		var baseUser *DTO.Location
 		for _, loc := range job.Locations {
 			if loc.Username == job.Username {
@@ -39,11 +40,12 @@ func StartWorker(jobs <-chan ProximityJob) {
 				continue
 			}
 			dist := haversine(baseUser.Latitude, baseUser.Longitude, loc.Latitude, loc.Longitude)
-			if dist <= 1.0 {
+			if dist <= 10.0 {
 				nearby = append(nearby, loc)
 			}
 		}
 
+		fmt.Printf("Nearby locations for user %s: %+v\n", job.Username, nearby)
 		job.Callback(&DTO.PromixityJob{UserData: nearby}, nil)
 	}
 }

@@ -19,6 +19,12 @@ type Location struct {
 	Longitude float64
 }
 
+type LocationRaw struct {
+	Username  string `bson:"username"`
+	Latitude  string `bson:"latitude"`
+	Longitude string `bson:"longitude"`
+}
+
 type PromixityJob struct {
 	UserData []Location
 }
