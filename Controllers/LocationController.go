@@ -31,3 +31,19 @@ func SaveLocation(c *gin.Context) {
 	outputVM.Data = response
 	c.JSON(http.StatusOK, outputVM)
 }
+
+func GetClosestLocation(c *gin.Context) {
+	username := c.Query("username")
+	if username == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "username is required"})
+		return
+	}
+
+	err := Logic.GetClosestLocationLogic(username)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(202, gin.H{"message": "Proximity check is running in background"})
+}

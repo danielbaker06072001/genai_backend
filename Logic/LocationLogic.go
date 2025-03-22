@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"genai2025/DTO"
 	Initializers "genai2025/Initializer"
+	"genai2025/Worker"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -62,4 +64,44 @@ func SaveLocationLogic(param DTO.LocationInputDTO) (*DTO.LocationOutputDTO, erro
 	result.Latitude = param.Latitude
 
 	return &result, nil
+}
+
+func GetClosestLocationLogic(username string) error {
+	collection := Initializers.MongoDatabase.Collection("Location")
+
+	// Get all locations from DB
+	cursor, err := collection.Find(context.Background(), bson.M{})
+	if err != nil {
+		return fmt.Errorf("failed to get locations: %v", err)
+	}
+	defer cursor.Close(context.Background())
+
+	var locations []DTO.Location
+	for cursor.Next(context.Background()) {
+		var loc DTO.Location
+		if err := cursor.Decode(&loc); err != nil {
+			continue
+		}
+		locations = append(locations, loc)
+	}
+
+	// ✅ Enqueue the job with username and callback
+	job := Worker.ProximityJob{
+		Locations: locations,
+		Username:  username,
+		Callback: func(result *DTO.PromixityJob, err error) {
+			if err != nil {
+				fmt.Printf("Proximity job failed for %s: %v\n", username, err)
+				return
+			}
+
+			// ✅ This is where you handle the result
+			fmt.Printf("Nearby users for %s: %+v\n", username, result.UserData)
+
+			// Optional: Save result to DB, notify user, or cache it
+		},
+	}
+
+	Worker.JobQueue <- job
+	return nil // you could return 202 accepted or just success
 }

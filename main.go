@@ -3,6 +3,7 @@ package main
 import (
 	"genai2025/Controllers"
 	Initializers "genai2025/Initializer"
+	"genai2025/Worker"
 	"log"
 	"net/http"
 
@@ -11,6 +12,7 @@ import (
 func init() {
 	Initializers.LoadEnvironmentVariables()
 	Initializers.ConnectToMongoDB()
+	Worker.InitJobQueue(10)
 }
 func main() {
 	r := gin.Default()
@@ -29,6 +31,7 @@ func main() {
 	Location := r.Group("/location")
 	{ 
 		Location.POST("/save", Controllers.SaveLocation)
+		Location.POST("/get-closest", Controllers.GetClosestLocation)
 	}
 
 

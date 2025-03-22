@@ -12,3 +12,13 @@ type LocationOutputDTO struct {
 	Longitude  string `json:"longitude"`
 	Latitude   string `json:"latitude"`
 }
+
+type Location struct {
+	Username  string
+	Latitude  float64
+	Longitude float64
+}
+
+type PromixityJob struct {
+	UserData []Location
+}
