@@ -2,12 +2,14 @@ module genai2025
 
 go 1.22.5
 
-require github.com/gin-gonic/gin v1.10.0
+require (
+	github.com/cohere-ai/cohere-go/v2 v2.13.0
+	github.com/gin-gonic/gin v1.10.0
+)
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.30.3 // indirect
 	github.com/aws/smithy-go v1.20.3 // indirect
-	github.com/cohere-ai/cohere-go/v2 v2.13.0 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/uuid v1.4.0 // indirect
 	github.com/klauspost/compress v1.16.7 // indirect

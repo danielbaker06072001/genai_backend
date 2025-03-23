@@ -26,6 +26,7 @@ func main() {
 	{ 
 		User.GET("/get", Controllers.GetUsers)
 		User.POST("/create", Controllers.CreateUser)
+		User.POST("/create-profile", Controllers.CreateUserProfile)
 	}
 
 	Location := r.Group("/location")

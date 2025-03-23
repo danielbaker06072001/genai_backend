@@ -43,3 +43,24 @@ func CreateUser(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 
 }
+
+func CreateUserProfile(c *gin.Context) {
+	var param DTO.UserProfileInputDTO
+	if err := c.ShouldBind(&param); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return 
+	}
+
+	var response ViewModels.CommonViewModel
+	userProfileOutput, err := Logic.CreateUserProfile(param)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	response.Result = "OK"
+	response.Message = "Create User Profile"
+	response.Data = userProfileOutput
+
+	c.JSON(http.StatusOK, response)
+}

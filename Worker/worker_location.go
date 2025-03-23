@@ -1,8 +1,10 @@
 package Worker
 
 import (
+	"context"
 	"fmt"
 	"genai2025/DTO"
+	Initializers "genai2025/Initializer"
 	"genai2025/Utils"
 	"log"
 	"math"
@@ -53,33 +55,31 @@ func StartWorker(jobs <-chan ProximityJob) {
 		// ? After finished retrieving close devices, use AI to analyze the data
 		// ? Then, return the result to the callback function 
 		// ? Input: @username
-		go func() { 
-			fmt.Printf("AI analysis for user %s\n", job.Username)
-			// ! Perform AI Analysis here
-			testUser := DTO.UserPromptDTO { 
-				Username: "user1",
-				Skills: []string{"Java", "SQL", "React"},
-				Interest: []string{"AI", "Backend systems", "ML pipelines", "REST APIs"},
+		go func(username string, nearbyCopy []DTO.Location) { 
+			fmt.Printf("AI analysis for user %s\n", username)
+			// ! Perform AI Analysis here - Geting the User's profile and close devices
+			baseUser, err := GetUserProfile(username)
+			if err != nil {
+				log.Printf("Error retrieving user profile for %s: %v\n", username, err)
+				return
 			}
-			testProfiles := []DTO.UserPromptDTO {
-				{
-					Username: "user2",
-					Skills: []string{"Python", "GenerateiveAI"},
-					Interest: []string{"AI", "Backend systems", "ML pipelines", "REST APIs"},
-				},
-				{
-					Username: "user3",
-					Skills: []string{"Java", "SQL", "React", "Next.js", "Supabase", "REST APIs"},
-					Interest: []string{"AI", "Backend systems", "ML pipelines", "REST APIs"},
-				},
+			
+			var profiles []DTO.UserPromptDTO
+			for _, loc := range nearbyCopy {
+				profile, err := GetUserProfile(loc.Username)
+				if err != nil {
+					log.Printf("Error retrieving user profile for %s: %v\n", loc.Username, err)
+					continue
+				}
+				profiles = append(profiles, *profile)
 			}
-			result := <- Utils.RankCloseDevicesAsync(testUser, testProfiles)
+			result := <- Utils.RankCloseDevicesAsync(*baseUser, profiles)
 			if result.Error != nil {
 				log.Println("Error:", result.Error)
 			} else {
 				log.Println("Cohere Response:", result.Response.Text)
 			}	
-		}()
+		}(job.Username, nearby)
 	}
 }
 
@@ -96,4 +96,16 @@ func haversine(lat1, lon1, lat2, lon2 float64) float64 {
 	c := 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
 
 	return R * c
+}
+
+func GetUserProfile(username string) (*DTO.UserPromptDTO, error) {
+	collection := Initializers.MongoDatabase.Collection("user_profile")
+
+	var profile DTO.UserPromptDTO
+	err := collection.FindOne(context.Background(), map[string]interface{}{"username": username}).Decode(&profile)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get profile for user %s: %v", username, err)
+	}
+
+	return &profile, nil
 }
