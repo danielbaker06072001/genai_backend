@@ -8,6 +8,8 @@ import (
 	"genai2025/Utils"
 	"log"
 	"math"
+
+	"github.com/gorilla/websocket"
 )
 
 type ProximityJob struct {
@@ -17,6 +19,7 @@ type ProximityJob struct {
 }
 
 var JobQueue chan ProximityJob
+var Clients = make(map[string]*websocket.Conn) 
 
 func InitJobQueue(buffer int) {
 	JobQueue = make(chan ProximityJob, buffer)
@@ -78,6 +81,21 @@ func StartWorker(jobs <-chan ProximityJob) {
 				log.Println("Error:", result.Error)
 			} else {
 				log.Println("Cohere Response:", result.Response.Text)
+				// ! When the data is ready, send it through websocket
+				if conn, ok := Clients[username]; ok {
+					fmt.Println("Connection found for user:", username)
+					message := map[string]interface{}{
+						"type": "analysis_done",
+						"data": result.Response.Text,
+					}
+					err := conn.WriteJSON(message)
+					if err != nil {
+						fmt.Println("Error writing WebSocket message:", err)
+						delete(Clients, username)
+					}
+				} else {
+					fmt.Println("No connection found for user:", username)
+				}
 			}	
 		}(job.Username, nearby)
 	}
