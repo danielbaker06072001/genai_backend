@@ -39,6 +39,11 @@ func main() {
 		GenAI.POST("/analze-close-profile", Controllers.AnalyzeProfile)
 	}
 
+	Notification := r.Group("/notification")
+	{
+		Notification.POST("/trigger", Controllers.SendNotification)
+	}
+
 	if err := r.Run(":8090"); err != nil {
 		log.Println("Failed to start server")
 	}
