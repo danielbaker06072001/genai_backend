@@ -37,8 +37,8 @@ func SendNotification(c *gin.Context) {
 			"subID":    receiver,
 			"appId":    28566,
 			"appToken": "CxKTyFzipAqvpDDOWwZMBA",
-			"title":    fmt.Sprintf("Message from %s", req.Sender),
-			"message":  req.Message,
+			"title":    fmt.Sprintf("You Have Matched with %s", req.Sender),
+			"body":  req.Message,
 		}
 
 		resp, err := client.R().
