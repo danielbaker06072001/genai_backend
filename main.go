@@ -16,8 +16,9 @@ func init() {
 }
 func main() {
 	r := gin.Default()
-
+	
 	r.Use(CORSMiddleware())	
+	r.GET("/ws", Controllers.WebSocketHandler)
 	r.GET("/ping", func (c *gin.Context)  {
 		c.JSON(http.StatusOK, gin.H{	"message": "pong"	})
 	})
@@ -26,6 +27,7 @@ func main() {
 	{ 
 		User.GET("/get", Controllers.GetUsers)
 		User.POST("/create", Controllers.CreateUser)
+		User.POST("/create-profile", Controllers.CreateUserProfile)
 	}
 
 	Location := r.Group("/location")
@@ -34,6 +36,15 @@ func main() {
 		Location.POST("/get-closest", Controllers.GetClosestLocation)
 	}
 
+	GenAI := r.Group("/genai")
+	{
+		GenAI.POST("/analze-close-profile", Controllers.AnalyzeProfile)
+	}
+
+	Notification := r.Group("/notification")
+	{
+		Notification.POST("/trigger", Controllers.SendNotification)
+	}
 
 	if err := r.Run(":8090"); err != nil {
 		log.Println("Failed to start server")

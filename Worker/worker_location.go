@@ -1,9 +1,15 @@
 package Worker
 
 import (
+	"context"
 	"fmt"
 	"genai2025/DTO"
+	Initializers "genai2025/Initializer"
+	"genai2025/Utils"
+	"log"
 	"math"
+
+	"github.com/gorilla/websocket"
 )
 
 type ProximityJob struct {
@@ -13,6 +19,7 @@ type ProximityJob struct {
 }
 
 var JobQueue chan ProximityJob
+var Clients = make(map[string]*websocket.Conn) 
 
 func InitJobQueue(buffer int) {
 	JobQueue = make(chan ProximityJob, buffer)
@@ -47,6 +54,50 @@ func StartWorker(jobs <-chan ProximityJob) {
 
 		fmt.Printf("Nearby locations for user %s: %+v\n", job.Username, nearby)
 		job.Callback(&DTO.PromixityJob{UserData: nearby}, nil)
+
+		// ? After finished retrieving close devices, use AI to analyze the data
+		// ? Then, return the result to the callback function 
+		// ? Input: @username
+		go func(username string, nearbyCopy []DTO.Location) { 
+			fmt.Printf("AI analysis for user %s\n", username)
+			// ! Perform AI Analysis here - Geting the User's profile and close devices
+			baseUser, err := GetUserProfile(username)
+			if err != nil {
+				log.Printf("Error retrieving user profile for %s: %v\n", username, err)
+				return
+			}
+			
+			var profiles []DTO.UserPromptDTO
+			for _, loc := range nearbyCopy {
+				profile, err := GetUserProfile(loc.Username)
+				if err != nil {
+					log.Printf("Error retrieving user profile for %s: %v\n", loc.Username, err)
+					continue
+				}
+				profiles = append(profiles, *profile)
+			}
+			result := <- Utils.RankCloseDevicesAsync(*baseUser, profiles)
+			if result.Error != nil {
+				log.Println("Error:", result.Error)
+			} else {
+				log.Println("Cohere Response:", result.Response.Text)
+				// ! When the data is ready, send it through websocket
+				if conn, ok := Clients[username]; ok {
+					fmt.Println("Connection found for user:", username)
+					message := map[string]interface{}{
+						"type": "analysis_done",
+						"data": result.Response.Text,
+					}
+					err := conn.WriteJSON(message)
+					if err != nil {
+						fmt.Println("Error writing WebSocket message:", err)
+						delete(Clients, username)
+					}
+				} else {
+					fmt.Println("No connection found for user:", username)
+				}
+			}	
+		}(job.Username, nearby)
 	}
 }
 
@@ -63,4 +114,16 @@ func haversine(lat1, lon1, lat2, lon2 float64) float64 {
 	c := 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
 
 	return R * c
+}
+
+func GetUserProfile(username string) (*DTO.UserPromptDTO, error) {
+	collection := Initializers.MongoDatabase.Collection("user_profile")
+
+	var profile DTO.UserPromptDTO
+	err := collection.FindOne(context.Background(), map[string]interface{}{"username": username}).Decode(&profile)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get profile for user %s: %v", username, err)
+	}
+
+	return &profile, nil
 }
